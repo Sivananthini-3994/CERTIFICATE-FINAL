@@ -1,0 +1,14 @@
+[
+    {
+        "name": "SIVA",
+        "course": "WEB DEVELOPMENT",
+        "startDate": "2024-01-15",
+        "endDate": "2024-06-15"
+    },
+    {
+        "name": "NANTHINI",
+        "course": "DATA SCIENCE",
+        "startDate": "2023-02-01",
+        "endDate": "2023-07-01"
+    }
+]

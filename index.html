@@ -1,0 +1,227 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Certificate Generator</title>
+    <style>
+        body {
+            font-family: Arial, sans-serif;
+            margin: 0;
+            padding: 0;
+            background-color: #f4f4f4;
+            display: flex;
+            justify-content: center;
+            align-items: center;
+            height: 100vh;
+        }
+        .form-container {
+            background-color: #fff;
+            padding: 30px;
+            border-radius: 8px;
+            box-shadow: 0 4px 8px rgba(0, 0, 0, 0.1);
+            width: 100%;
+            max-width: 400px;
+            text-align: center;
+        }
+        h1 {
+            margin-bottom: 20px;
+            font-size: 24px;
+            color: #333;
+        }
+        form {
+            display: flex;
+            flex-direction: column;
+            gap: 15px;
+        }
+        label {
+            font-weight: bold;
+            text-align: left;
+            margin-bottom: 5px;
+            color: #555;
+        }
+        input, select {
+            padding: 10px;
+            font-size: 16px;
+            border: 1px solid #ccc;
+            border-radius: 4px;
+            outline: none;
+        }
+        button {
+            padding: 12px;
+            font-size: 16px;
+            background-color: #007bff;
+            color: white;
+            border: none;
+            border-radius: 4px;
+            cursor: pointer;
+            transition: background-color 0.3s ease;
+        }
+        button:hover {
+            background-color: #0056b3;
+        }
+    </style>
+</head>
+<body>
+    <div class="form-container">
+        <h1>Get Your Certificate</h1>
+        <form id="certificate-form">
+            <label for="name">Full Name:</label>
+            <input type="text" id="name" name="name" required onblur="checkName()" oninput="validateName()">
+                        
+            <label for="course">Course:</label>
+            <select id="course" name="course" required>
+                <option value="" disabled selected>Select your course</option>
+                <option value="PLACEMENT TRAINING">Placement Training</option>
+                <option value="WEB DEVELOPMENT">Web Development</option>
+                <option value="DATA SCIENCE">Data Science</option>
+                <option value="GRAPHIC DESIGN">Graphic Design</option>
+                <option value="FULL STACK DEVELOPER">Full Stack Developer</option>
+                <option value="MOBILE APP DEVELOPMENT">Mobile App Development</option>
+            </select>
+            
+            <label for="startDate">Start Date:</label>
+            <input type="date" id="startDate" name="startDate" required>
+            
+            <label for="endDate">End Date:</label>
+            <input type="date" id="endDate" name="endDate" required>
+            
+            <button type="button" id="get-certificate-btn">Get Certificate</button>
+        </form>
+    </div>
+
+    <script src="https://cdnjs.cloudflare.com/ajax/libs/jspdf/2.5.1/jspdf.umd.min.js"></script>
+
+    <script>
+        // Inline JSON data for local testing
+        let membersData = [
+        { "name": "SIVA", "course": "WEB DEVELOPMENT", "startDate": "2024-01-15", "endDate": "2024-06-15" },
+        { "name": "NANTHINI", "course": "DATA SCIENCE", "startDate": "2023-02-01", "endDate": "2023-07-01" },
+        { "name": "ANUMANTH SOORYA", "course": "GRAPHIC DESIGN", "startDate": "2024-03-01", "endDate": "2024-08-01" },
+        { "name": "SOORYA", "course": "MOBILE APP DEVELOPMENT", "startDate": "2023-06-15", "endDate": "2023-12-15" },
+        { "name": "DURGA", "course": "FULL STACK DEVELOPER", "startDate": "2023-01-01", "endDate": "2023-06-01" },
+        { "name": "PRIYA", "course": "WEB DEVELOPMENT", "startDate": "2024-04-01", "endDate": "2024-09-01" },
+        { "name": "RAVI", "course": "DATA SCIENCE", "startDate": "2023-05-10", "endDate": "2023-10-10" }
+    ];
+
+        // Validate name input to allow only uppercase letters and spaces
+        function validateName() {
+            const nameInput = document.getElementById('name');
+            const nameValue = nameInput.value;
+
+            // Check if name contains invalid characters
+            if (!/^[A-Z\s]*$/.test(nameValue) && nameValue !== '') {
+                alert("Only uppercase letters are allowed in the name field.");
+                nameInput.value = nameValue.replace(/[^A-Z\s]/g, ''); // Remove invalid characters
+            }
+        }
+
+        // Function to check the name and fill remaining fields
+        function checkName() {
+            const nameInput = document.getElementById('name').value.trim().toUpperCase();
+            const member = membersData.find(m => m.name === nameInput);
+
+            if (member) {
+                // Auto-fill course and dates
+                document.getElementById('course').value = member.course;
+                document.getElementById('startDate').value = member.startDate;
+                document.getElementById('endDate').value = member.endDate;
+                
+                // Make fields readonly after autofill
+                document.getElementById('name').setAttribute('readonly', true);
+                document.getElementById('course').setAttribute('disabled', true);
+                document.getElementById('startDate').setAttribute('readonly', true);
+                document.getElementById('endDate').setAttribute('readonly', true);
+            } else {
+                // Show alert and refresh page if the name is incorrect
+                if (nameInput !== '') {
+                    alert("The entered name does not match any records.");
+                }
+                // Refresh the page to reset form fields
+                setTimeout(function() {
+                    location.reload();
+                }, 1000); // Delay page reload by 1 second
+            }
+        }
+
+        // Function to generate and download the certificate as a PDF
+        async function generateCertificate(event) {
+            event.preventDefault(); // Prevent form submission
+
+            const name = document.getElementById('name').value.trim().toUpperCase();
+            const course = document.getElementById('course').value;
+            const startDate = document.getElementById('startDate').value;
+            const endDate = document.getElementById('endDate').value;
+
+            // Validate that all fields match a record in membersData
+            const member = membersData.find(m => 
+                m.name === name && 
+                m.course === course &&
+                m.startDate === startDate &&
+                m.endDate === endDate
+            );
+
+            if (!member) {
+                alert("The entered details do not match the records.");
+                return; // Prevent PDF generation if validation fails
+            }
+
+            const { jsPDF } = window.jspdf;
+            const doc = new jsPDF({
+                orientation: 'landscape',
+                unit: 'px',
+                format: [1600, 900],
+                putOnlyUsedFonts: true,
+                floatPrecision: 16
+            });
+
+            const backgroundUrl = 'https://i.imgur.com/Wz0qLs6.jpeg';
+            const backgroundImg = await loadImage(backgroundUrl);
+
+            doc.addImage(backgroundImg, 'JPEG', 0, 0, 1600, 900);
+            doc.setFontSize(150);
+            doc.setFont('Times New Roman', 'bold');
+            doc.text("CERTIFICATE", 800, 280, { align: "center" });
+
+            doc.setFontSize(76);
+            doc.setFont('Times New Roman', 'italic');
+            doc.text("OF COMPLETION", 800, 380, { align: "center" });
+
+            doc.setFontSize(50);
+            doc.setFont('Cursive');
+            doc.text("This certificate is presented to", 800, 430, { align: "center" });
+
+            doc.setFontSize(100);
+            doc.setFont('Courier', 'bold');
+            doc.text(name, 800, 520, { align: "center" });
+
+            doc.setFontSize(35);
+            doc.text(`has successfully completed the course '${course}'`, 800, 580, { align: "center" });
+            doc.text(`from ${startDate} to ${endDate}.`, 800, 620, { align: "center" });
+
+            doc.setFontSize(30);
+            doc.text("DURGA DEVI", 800, 750, { align: "center" });
+            doc.line(680, 755, 920, 755); // Signature line
+
+            doc.setFontSize(25);
+            doc.text("PRESIDENT-SHARPENEDMIND", 800, 790, { align: "center" });
+
+            doc.save(`${name}_Certificate.pdf`);
+        }
+
+        // Function to load an image
+        function loadImage(url) {
+            return new Promise((resolve) => {
+                const img = new Image();
+                img.crossOrigin = "Anonymous"; // Allow cross-origin images
+                img.onload = () => resolve(img);
+                img.src = url;
+            });
+        }
+
+        // Add event listener for button click
+        document.getElementById('get-certificate-btn').addEventListener('click', generateCertificate);
+    </script>
+</body>
+</html>
+
